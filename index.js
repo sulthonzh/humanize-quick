@@ -6,7 +6,8 @@
  */
 
 // ─── bytes(n, [opts]) ──────────────────────────────────────────
-const BYTE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+const BYTE_UNITS_SI = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+const BYTE_UNITS_IEC = ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
 
 export function bytes(n, opts = {}) {
   if (typeof n !== "number" || !isFinite(n)) return String(n);
@@ -14,14 +15,20 @@ export function bytes(n, opts = {}) {
   if (n === 0) return "0 B";
   const base = opts.binary ? 1024 : 1000;
   const decimals = opts.decimals ?? 1;
-  const i = Math.min(
+  const units = opts.binary ? BYTE_UNITS_IEC : BYTE_UNITS_SI;
+  let i = Math.min(
     Math.floor(Math.log(n) / Math.log(base)),
-    BYTE_UNITS.length - 1
+    units.length - 1
   );
-  const val = n / Math.pow(base, i);
+  let val = n / Math.pow(base, i);
+  // Rollover: if value rounds up to >= base, bump to next unit
+  if (i < units.length - 1 && Math.round(val) >= base) {
+    i++;
+    val = n / Math.pow(base, i);
+  }
   let fixed = val >= 100 || i === 0 ? String(Math.round(val)) : val.toFixed(decimals);
   fixed = fixed.replace(/\.0$/, '');
-  return `${fixed} ${BYTE_UNITS[i]}`;
+  return `${fixed} ${units[i]}`;
 }
 
 // ─── duration(ms, [opts]) ──────────────────────────────────────
@@ -152,7 +159,7 @@ export function list(items, opts = {}) {
 
 // ─── percentage(value, total, [opts]) ──────────────────────────
 export function percentage(value, total, opts = {}) {
-  if (total === 0) return "0%";
+  if (typeof value !== "number" || typeof total !== "number" || !isFinite(value) || !isFinite(total) || total === 0) return "0%";
   const decimals = opts.decimals ?? 1;
   const pct = (value / total) * 100;
   return `${pct.toFixed(decimals)}%`;

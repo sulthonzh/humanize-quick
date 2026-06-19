@@ -17,11 +17,11 @@ test("bytes: 500", () => assert.equal(bytes(500), "500 B"));
 test("bytes: 1000 → 1 KB", () => assert.equal(bytes(1000), "1 KB"));
 test("bytes: 1500 → 1.5 KB", () => assert.equal(bytes(1500), "1.5 KB"));
 test("bytes: 1048576 → 1 MB", () => assert.equal(bytes(1048576), "1 MB"));
-test("bytes: binary mode", () => assert.equal(bytes(1024, { binary: true }), "1 KB"));
+test("bytes: binary mode uses IEC units", () => assert.equal(bytes(1024, { binary: true }), "1 KiB"));
 test("bytes: negative", () => assert.equal(bytes(-1500), "-1.5 KB"));
 test("bytes: large number", () => assert.equal(bytes(1e12), "1 TB"));
 test("bytes: decimals=2", () => assert.equal(bytes(1234, { decimals: 2 }), "1.23 KB"));
-test("bytes: rounds large values", () => assert.equal(bytes(999500), "1000 KB"));
+test("bytes: rollover 999500 → ~1 MB", () => assert.equal(bytes(999500), "1 MB"));
 
 // ── duration ───────────────────────────────────
 test("duration: 0ms", () => assert.equal(duration(0), "0ms"));
@@ -139,7 +139,98 @@ test("clock: 1500ms", () => assert.equal(clock(1500), "1.5s"));
 test("clock: 65000ms", () => assert.equal(clock(65000), "1m 5s"));
 test("clock: 3700000ms", () => assert.equal(clock(3700000), "61m 40s"));
 
-// ── run ────────────────────────────────────────
+// ── bytes: extra coverage ──────────────────────
+test("bytes: binary 1048576 → 1 MiB", () => assert.equal(bytes(1048576, { binary: true }), "1 MiB"));
+test("bytes: rollover 999950 → ~1 MB", () => assert.equal(bytes(999950), "1 MB"));
+test("bytes: very large 1e15 → 1 PB", () => assert.equal(bytes(1e15), "1 PB"));
+test("bytes: NaN returns string", () => assert.equal(bytes(NaN), "NaN"));
+test("bytes: Infinity returns string", () => assert.equal(bytes(Infinity), "Infinity"));
+test("bytes: binary rollover", () => assert.equal(bytes(1073741824, { binary: true }), "1 GiB"));
+
+// ── duration: edge cases ───────────────────────
+test("duration: sub-ms rounds to 0ms", () => assert.equal(duration(0.5), "0ms"));
+test("duration: 1 year", () => assert.equal(duration(365 * 24 * 60 * 60 * 1000, { maxParts: 1 }), "1y"));
+test("duration: 1 month", () => assert.equal(duration(30 * 24 * 60 * 60 * 1000, { maxParts: 1 }), "1mo"));
+test("duration: complex maxParts=4", () => assert.equal(duration(90122000, { maxParts: 4 }), "1d 1h 2m 2s"));
+test("duration: NaN returns string", () => assert.equal(duration(NaN), "NaN"));
+test("duration: Infinity returns string", () => assert.equal(duration(Infinity), "Infinity"));
+
+// ── relativeTime: future + edge ────────────────
+test("relativeTime: in 1 hour", () => {
+  assert.equal(relativeTime(new Date(NOW + 60 * 60 * 1000), { now: NOW }), "in 1 hour");
+});
+test("relativeTime: in 2 days", () => {
+  assert.equal(relativeTime(new Date(NOW + 2 * 24 * 60 * 60 * 1000), { now: NOW }), "in 2 days");
+});
+test("relativeTime: in 1 year", () => {
+  assert.equal(relativeTime(new Date(NOW + 365 * 24 * 60 * 60 * 1000), { now: NOW }), "in 1 year");
+});
+test("relativeTime: string date input", () => {
+  const d = new Date(NOW - 3 * 60 * 60 * 1000);
+  assert.equal(relativeTime(d.toISOString(), { now: NOW }), "3 hours ago");
+});
+test("relativeTime: timestamp input", () => {
+  assert.equal(relativeTime(NOW - 5 * 60 * 1000, { now: NOW }), "5 minutes ago");
+});
+
+// ── ordinal: extra ─────────────────────────────
+test("ordinal: 0th", () => assert.equal(ordinal(0), "0th"));
+test("ordinal: 100th", () => assert.equal(ordinal(100), "100th"));
+test("ordinal: 112th", () => assert.equal(ordinal(112), "112th"));
+test("ordinal: 213th", () => assert.equal(ordinal(213), "213th"));
+
+// ── compactNumber: edge cases ──────────────────
+test("compactNumber: 0", () => assert.equal(compactNumber(0), "0"));
+test("compactNumber: 1e15 → 1Q", () => assert.equal(compactNumber(1e15), "1Q"));
+test("compactNumber: NaN", () => assert.equal(compactNumber(NaN), "NaN"));
+test("compactNumber: Infinity", () => assert.equal(compactNumber(Infinity), "Infinity"));
+
+// ── percentage: edge cases ─────────────────────
+test("percentage: NaN value → 0%", () => assert.equal(percentage(NaN, 100), "0%"));
+test("percentage: Infinity total → 0%", () => assert.equal(percentage(50, Infinity), "0%"));
+test("percentage: 100/100", () => assert.equal(percentage(100, 100), "100.0%"));
+test("percentage: negative value", () => assert.equal(percentage(-10, 100), "-10.0%"));
+test("percentage: decimals=0", () => assert.equal(percentage(1, 3, { decimals: 0 }), "33%"));
+
+// ── pluralize: extra ───────────────────────────
+test("pluralize: 0 with custom", () => assert.equal(pluralize(0, "child", "children"), "0 children"));
+test("pluralize: negative", () => assert.equal(pluralize(-1, "item"), "-1 items"));
+
+// ── list: extra ────────────────────────────────
+test("list: four items with oxford", () => assert.equal(list(["a", "b", "c", "d"]), "a, b, c, and d"));
+test("list: non-array input", () => assert.equal(list("hello"), "hello"));
+test("list: two items custom conj", () => assert.equal(list(["x", "y"], { conjunction: "or" }), "x or y"));
+
+// ── pad: extra ─────────────────────────────────
+test("pad: negative number", () => assert.equal(pad(-5, 4), "00-5"));
+test("pad: already long enough", () => assert.equal(pad(12345, 3), "12345"));
+
+// ── truncate: extra ────────────────────────────
+test("truncate: exact length", () => assert.equal(truncate("hello", 5), "hello"));
+test("truncate: empty string", () => assert.equal(truncate("", 5), ""));
+test("truncate: multi-byte unicode", () => {
+  // 4 chars + ellipsis
+  assert.equal(truncate("héllo wörld", 8), "héllo w…");
+});
+
+// ── clock: extra ───────────────────────────────
+test("clock: 0ms", () => assert.equal(clock(0), "0ms"));
+test("clock: exactly 1000ms", () => assert.equal(clock(1000), "1.0s"));
+test("clock: 3599999ms", () => assert.equal(clock(3599999), "59m 60s"));
+
+// ── run ────────────────────────────────
+
+// ── version check ─────────────────────────────
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const PKG_VERSION = JSON.parse(readFileSync(join(__dirname, "package.json"), "utf8")).version;
+test("version is valid semver", () => {
+  assert.match(PKG_VERSION, /^\d+\.\d+\.\d+$/, "package.json version must be valid semver");
+});
+
+// ── run ────────────────────────────────────────────────
 for (const { name, fn } of tests) {
   try {
     fn();

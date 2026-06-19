@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 import { bytes, duration, relativeTime, ordinal, compactNumber, pluralize, list, percentage, pad, truncate, clock } from "./index.js";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const VERSION = JSON.parse(readFileSync(join(__dirname, "package.json"), "utf8")).version;
 
 const [cmd, ...args] = process.argv.slice(2);
 
@@ -41,6 +47,10 @@ Options:
 (async () => {
   if (!cmd || cmd === "--help" || cmd === "-h") {
     console.log(HELP);
+    return;
+  }
+  if (cmd === "--version" || cmd === "-V") {
+    console.log(VERSION);
     return;
   }
 

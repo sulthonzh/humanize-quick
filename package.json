@@ -1,13 +1,25 @@
 {
   "name": "humanize-quick",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Zero-dependency human-readable formatting: bytes, durations, relative time, ordinals, compact numbers, pluralization, lists.",
   "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./cli.js": "./cli.js"
+  },
   "bin": { "humanize": "cli.js" },
   "type": "module",
   "scripts": {
-    "test": "node test.js"
+    "test": "node test.js",
+    "prepublishOnly": "npm test"
   },
+  "files": [
+    "index.js",
+    "cli.js",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "keywords": ["humanize", "format", "bytes", "duration", "relative-time", "ordinal", "compact", "pluralize", "zero-dependency"],
   "license": "MIT",
   "author": "sulthonzh"
