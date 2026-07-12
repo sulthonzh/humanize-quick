@@ -7,7 +7,9 @@
     ".": "./index.js",
     "./cli.js": "./cli.js"
   },
-  "bin": { "humanize": "cli.js" },
+  "bin": {
+    "humanize": "cli.js"
+  },
   "type": "module",
   "scripts": {
     "test": "node test.js",
@@ -20,7 +22,20 @@
     "CHANGELOG.md",
     "LICENSE"
   ],
-  "keywords": ["humanize", "format", "bytes", "duration", "relative-time", "ordinal", "compact", "pluralize", "zero-dependency"],
+  "keywords": [
+    "humanize",
+    "format",
+    "bytes",
+    "duration",
+    "relative-time",
+    "ordinal",
+    "compact",
+    "pluralize",
+    "zero-dependency"
+  ],
   "license": "MIT",
-  "author": "sulthonzh"
+  "author": "sulthonzh",
+  "devDependencies": {
+    "@changesets/cli": "^2.31.0"
+  }
 }
